@@ -1,5 +1,6 @@
 import argparse
 import datetime
+import json
 import os
 
 
@@ -8,7 +9,7 @@ def parse():
         description='BC learning for image classification')
 
     # General settings
-    parser.add_argument('--dataset', required=True,
+    parser.add_argument('--dataset', default='cifar10',
                         choices=['cifar10', 'cifar100'])
     parser.add_argument('--n_trials', type=int, default=10)
     parser.add_argument('--save', default='results',
@@ -46,25 +47,23 @@ def parse():
 
     # Default settings
     default_settings = dict()
-    default_settings['cifar10'] = {
-        'convnet': {'n_epochs': 250, 'LR': 0.1, 'schedule': [0.4, 0.6, 0.8], 'warmup': 0, 'batch_size': 128}
-    }
-    default_settings['cifar100'] = {
-        'convnet': {'n_epochs': 250, 'LR': 0.1, 'schedule': [0.4, 0.6, 0.8], 'warmup': 0, 'batch_size': 128}
-    }
+    default_settings['cifar10'] = {'n_epochs': 250, 'LR': 0.1, 'schedule': [0.4, 0.6, 0.8], 'warmup': 0, 'batch_size': 128}
+    default_settings['cifar100'] = {'n_epochs': 250, 'LR': 0.1, 'schedule': [0.4, 0.6, 0.8], 'warmup': 0, 'batch_size': 128}
     for key in ['n_epochs', 'LR', 'schedule', 'warmup', 'batch_size']:
         if eval('opt.{}'.format(key)) == -1:
-            setattr(opt, key, default_settings[opt.dataset][opt.netType][key])
+            setattr(opt, key, default_settings[opt.dataset][key])
 
     _schedule = opt.schedule
     _schedule = [int(opt.n_epochs * i) for i in _schedule]
     _schedule = [i for i in _schedule if i > opt.warmup]
-    opt.schedule = schedule
+    opt.schedule = _schedule
 
     timestamp = datetime.datetime.now().strftime('%y%m%d_%H%M')
     opt.save = os.path.join(opt.save, timestamp)
     if not os.path.isdir(opt.save):
         os.makedirs(opt.save)
+        with open(os.path.join(opt.save, 'opts.json'), 'w') as f:
+            json.dump(opt.__dict__, f, indent=4)
 
     display_info(opt)
 

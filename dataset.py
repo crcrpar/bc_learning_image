@@ -68,7 +68,7 @@ class ImageDataset(chainer.dataset.DatasetMixin):
         else:
             image = T.random_flip(image, x_random=True)
             image = padding(image, 4)
-            image = T.random_crop(image, 32)
+            image = T.random_crop(image, (32, 32))
             return image
 
     def get_example(self, i):
@@ -89,9 +89,9 @@ class ImageDataset(chainer.dataset.DatasetMixin):
                 image = ((image1 * p + image2 * (1 - p)) /
                          np.sqrt(p ** 2 + (1 - p) ** 2)).astype(np.float32)
             else:
-                image = (image1 * p + image2 * (1 - r)).astype(np.float32)
+                image = (image1 * r + image2 * (1 - r)).astype(np.float32)
 
-            eye = np.eye(self.opt.nClasses)
+            eye = np.eye(self.opt.n_classes)
             label = (eye[label1] * r + eye[label2]
                      * (1 - r)).astype(np.float32)
 
@@ -109,8 +109,8 @@ def setup(opt):
     train_data = ImageDataset(opt, cifar10, train=True)
     val_data = ImageDataset(opt, cifar10, train=False)
     train_iter = iterators.MultiprocessIterator(
-        train_data, opt.batchSize, repeat=False)
+        train_data, opt.batch_size, repeat=False)
     val_iter = iterators.SerialIterator(
-        val_data, opt.batchSize, repeat=False, shuffle=False)
+        val_data, opt.batch_size, repeat=False, shuffle=False)
 
     return train_iter, val_iter

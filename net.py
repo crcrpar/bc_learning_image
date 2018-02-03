@@ -10,7 +10,7 @@ from chainercv.links import Conv2DBNActiv
 
 
 def kl_divergence(y, t):
-    entropy = - F.sum(t[t.array.nonzero()] * F.log(t[t.array.nonzero()]))
+    entropy = - F.sum(t[t.nonzero()] * F.log(t[t.nonzero()]))
     cross_entropy = - F.sum(t * F.log_softmax(y))
 
     return (cross_entropy - entropy) / y.shape[0]
@@ -60,7 +60,7 @@ class ConvNet(chainer.Chain):
         h = self.conv2_2(self.conv2_1(h))
         h = F.max_pooling_2d(h, 2)
         h = self.conv3_4(self.conv3_3(self.conv3_2(self.conv3_1(h))))
-        h = F.max_pooling_2d(h)
+        h = F.max_pooling_2d(h, 2)
         # linear
         h = F.dropout(F.relu(self.fc4(h)), self.dr_ratio)
         h = F.dropout(F.relu(self.fc5(h)), self.dr_ratio)
