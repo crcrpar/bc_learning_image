@@ -47,6 +47,10 @@ class ConvNet(chainer.Chain):
     def __call__(self, x, t):
         y_hat = self.forward(x)
         loss = self.loss(y_hat, t)
+        if chainer.config.train:
+            loss = self.loss(y_hat, t)
+        else:
+            loss = F.softmax_cross_entropy(y_hat, t)
         if self.bc_learning:
             t = F.argmax(t, axis=1)
         acc = F.accuracy(y_hat, t)

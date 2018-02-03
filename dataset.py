@@ -108,6 +108,10 @@ def setup(opt):
     cifar10 = opt.dataset.lower() == 'cifar10'
     train_data = ImageDataset(opt, cifar10, train=True)
     val_data = ImageDataset(opt, cifar10, train=False)
+    if opt.debug:
+        train_data = chainer.datasets.split_dataset(
+            train_data, opt.batch_size)[0]
+        val_data = chainer.datasets.split_dataset(val_data, opt.batch_size)[0]
     train_iter = iterators.MultiprocessIterator(
         train_data, opt.batch_size, repeat=False)
     val_iter = iterators.SerialIterator(

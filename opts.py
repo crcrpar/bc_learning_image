@@ -34,6 +34,7 @@ def parse():
     parser.add_argument('--dropout_ratio', '-D', type=float, default=.5,
                         help='dropout ratio. default 0.5')
     parser.add_argument('--resume', default=None, help='snapshot')
+    parser.add_argument('--debug', action='store_true')
     opt = parser.parse_args()
     if opt.plus and not opt.BC:
         raise Exception('Using only --plus option is invalid.')
@@ -47,8 +48,10 @@ def parse():
 
     # Default settings
     default_settings = dict()
-    default_settings['cifar10'] = {'n_epochs': 250, 'LR': 0.1, 'schedule': [0.4, 0.6, 0.8], 'warmup': 0, 'batch_size': 128}
-    default_settings['cifar100'] = {'n_epochs': 250, 'LR': 0.1, 'schedule': [0.4, 0.6, 0.8], 'warmup': 0, 'batch_size': 128}
+    default_settings['cifar10'] = {'n_epochs': 250, 'LR': 0.1, 'schedule': [
+        0.4, 0.6, 0.8], 'warmup': 0, 'batch_size': 128}
+    default_settings['cifar100'] = {'n_epochs': 250, 'LR': 0.1, 'schedule': [
+        0.4, 0.6, 0.8], 'warmup': 0, 'batch_size': 128}
     for key in ['n_epochs', 'LR', 'schedule', 'warmup', 'batch_size']:
         if eval('opt.{}'.format(key)) == -1:
             setattr(opt, key, default_settings[opt.dataset][key])
@@ -59,7 +62,8 @@ def parse():
     opt.schedule = _schedule
 
     timestamp = datetime.datetime.now().strftime('%y%m%d_%H%M')
-    opt.save = os.path.join(opt.save, timestamp)
+    debug_flag = '_debug' if opt.debug else ''
+    opt.save = os.path.join(opt.save, timestamp + debug_flag)
     if not os.path.isdir(opt.save):
         os.makedirs(opt.save)
         with open(os.path.join(opt.save, 'opts.json'), 'w') as f:
@@ -78,15 +82,6 @@ def display_info(opt):
             learning = 'BC'
     else:
         learning = 'standard'
+    opt.learning = learning
 
-    print('+------------------------------+')
-    print('| CIFAR classification')
-    print('+------------------------------+')
-    print('| dataset  : {}'.format(opt.dataset))
-    print('| learning : {}'.format(learning))
-    print('| n_epochs  : {}'.format(opt.n_epochs))
-    print('| LRInit   : {}'.format(opt.LR))
-    print('| schedule : {}'.format(opt.schedule))
-    print('| warmup   : {}'.format(opt.warmup))
-    print('| batch_size: {}'.format(opt.batch_size))
-    print('+------------------------------+')
+    print(json.dumps(opt.__dict__, indent=4))

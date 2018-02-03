@@ -51,13 +51,15 @@ def main():
             ['main/loss', 'validation/main/loss'], 'epoch', file_name='loss.png'))
         trainer.extend(extensions.PlotReport(
             ['main/accuracy', 'validation/main/accuracy'], 'epoch', file_name='accuracy.png'))
+        trainer.extend(extensions.PlotReport(
+            ['lr'], 'epoch', file_name='learning_rate.png'))
     trainer.extend(extensions.PrintReport(['elapsed_time', 'epoch', 'iteration', 'lr',
                                            'main/loss', 'main/accuracy', 'validation/main/loss', 'validation/main/accuracy']))
     trainer.extend(extensions.ProgressBar(update_interval=25))
     if opt.resume and os.path.exists(opt.resume):
         chainer.serializers.load_npz(opt.resume, trainer)
     # Run the training
-    trainer.run()
+        trainer.run()
 
 
 if __name__ == '__main__':
