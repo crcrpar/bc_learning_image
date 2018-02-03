@@ -41,7 +41,8 @@ class Trainer:
             train_acc += float(acc.data) * len(t.data)
 
             elapsed_time = time.time() - self.start_time
-            progress = (self.n_batches * (epoch - 1) + i + 1) * 1.0 / (self.n_batches * self.opt.nEpochs)
+            progress = (self.n_batches * (epoch - 1) + i + 1) * \
+                1.0 / (self.n_batches * self.opt.nEpochs)
             eta = elapsed_time / progress - elapsed_time
 
             line = '* Epoch: {}/{} ({}/{}) | Train: LR {} | Time: {} (ETA: {})'.format(
@@ -74,7 +75,8 @@ class Trainer:
         return val_top1
 
     def lr_schedule(self, epoch):
-        divide_epoch = np.array([self.opt.nEpochs * i for i in self.opt.schedule])
+        divide_epoch = np.array(
+            [self.opt.nEpochs * i for i in self.opt.schedule])
         decay = sum(epoch > divide_epoch)
         if epoch <= self.opt.warmup:
             decay = 1

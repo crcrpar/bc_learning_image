@@ -86,18 +86,20 @@ class ImageDataset(chainer.dataset.DatasetMixin):
                 g1 = np.std(image1)
                 g2 = np.std(image2)
                 p = 1. / (1 + g1 / g2 * (1 - r) / r)
-                image = ((image1 * p + image2 * (1 - p)) / np.sqrt(p ** 2 + (1 - p) ** 2)).astype(np.float32)
+                image = ((image1 * p + image2 * (1 - p)) /
+                         np.sqrt(p ** 2 + (1 - p) ** 2)).astype(np.float32)
             else:
                 image = (image1 * p + image2 * (1 - r)).astype(np.float32)
 
             eye = np.eye(self.opt.nClasses)
-            label = (eye[label1] * r + eye[label2] * (1 - r)).astype(np.float32)
+            label = (eye[label1] * r + eye[label2]
+                     * (1 - r)).astype(np.float32)
 
         else:
             image, label = self.base[i]
             image = self.preprocess(image).astype(np.float32)
             label = np.asarray(label, dtype=np.int32)
-            
+
         return image, label
 
 

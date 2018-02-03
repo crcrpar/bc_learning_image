@@ -38,9 +38,11 @@ class ConvNet(chainer.Chain):
             self.conv3_2 = Conv2DBNActiv(256, 256, **kwargs)
             self.conv3_3 = Conv2DBNActiv(256, 256, **kwargs)
             self.conv3_4 = Conv2DBNActiv(256, 256, **kwargs)
-            self.fc4 = L.Linear(1024, initialW=Uniform(1. / math.sqrt(256 * 4 * 4)))
+            self.fc4 = L.Linear(1024, initialW=Uniform(
+                1. / math.sqrt(256 * 4 * 4)))
             self.fc5 = L.Linear(1024, initialW=Uniform(1. / math.sqrt(1024)))
-            self.fc6 = L.Linear(n_classes, initialW=Uniform(1. / math.sqrt(1024)))
+            self.fc6 = L.Linear(
+                n_classes, initialW=Uniform(1. / math.sqrt(1024)))
 
     def __call__(self, x, t):
         y_hat = self.forward(x)
