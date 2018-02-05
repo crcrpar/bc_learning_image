@@ -1,3 +1,15 @@
+# WARNINGS
+This repository is forked from [mil-tokyo/bc_learning_image](https://github.com/mil-tokyo/bc_learning_image) and updated to work with `chainer ver 3.3.0` and `chainercv ver 0.8.0`.  
+Here are some differences
+- using `chainer.datasets.get_cifar10()` or `chainer.datasets.get_cifar100()`
+- using functions in `chainercv.transforms`
+- using `updater` and `Trainer`
+    - replace manual learning rate scheduler with `chainer.training.extensions` and `chainer.training.triggers`
+- reduce arguments in `opts.py`
+    - no need to specify CIFAR directory. Aside to this `chainer.datasets.get_cifar10` and `chainer.datasets.get_cifar100` will download corresponding CIFAR dataset, convert it into numpy file, and save it under `$HOME/.chainer` by default.
+    - `--dataset` argument is set to `cifar10`
+    - results (learning curves, snapshots, models, options json file) will be saved under `$(pwd)/results/{yy/mm/dd_/HH/MM}_{learning}`. `learning` is `BC`, `BC+`, or `standard`.
+
 BC learning for images
 =========================
 
@@ -26,21 +38,21 @@ train the model to output the mixing ratio.
 ## Training
 - Template:
 
-		python main.py --dataset [cifar10 or cifar100] --netType convnet --data path/to/dataset/directory/ (--BC) (--plus)
+		python main.py --dataset [cifar10 or cifar100] (--BC) (--plus)
  
 - Recipes:
 	- Standard learning on CIFAR-10 (around 6.1% error):
 
-			python main.py --dataset cifar10 --netType convnet --data path/to/dataset/directory/
+			python main.py (--dataset cifar10)
 	
 
 	- BC learning on CIFAR-10 (around 5.4% error):
 
-			python main.py --dataset cifar10 --netType convnet --data path/to/dataset/directory/ --BC
+			python main.py (--dataset cifar10) --BC
 	
 	- BC+ learning on CIFAR-10 (around 5.2% error):
 
-			python main.py --dataset cifar10 --netType convnet --data path/to/dataset/directory/ --BC --plus
+			python main.py (--dataset cifar10) --BC --plus
 	
 - Notes:
 	- It uses the same data augmentation scheme as [fb.resnet.torch](https://github.com/facebook/fb.resnet.torch).
