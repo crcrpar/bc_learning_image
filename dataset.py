@@ -1,18 +1,42 @@
-import os
 import numpy as np
-import random
-import cPickle
-import chainer
 
-import utils as U
+import chainer
+from chainer import iterators
+import chainercv.transforms as T
+
+
+def _load_cifar(cifar10, train):
+    if cifar10:
+        train, test = chainer.datasets.get_cifar10(scale=255.)
+    else:
+        train, test = chainer.datasets.get_cifar100(scale=255.)
+    if train:
+        return train
+    else:
+        return test
+
+
+def normalize(image, mean, std):
+    return (image - mean[:, None, None]) / std[:, None, None]
+
+
+def zero_mean(image, mean, std):
+    img_mean = np.mean(image, keepdims=True)
+    return (image - img_mean - mean[:, None, None]) / std[:, None, None]
+
+
+def padding(image, pad):
+    return np.pad(image, ((0, 0), (pad, pad), (pad, pad)), 'constant')
 
 
 class ImageDataset(chainer.dataset.DatasetMixin):
-    def __init__(self, images, labels, opt, train=True):
-        self.base = chainer.datasets.TupleDataset(images, labels)
+
+    def __init__(self, opt, cifar10=True, train=True):
         self.opt = opt
+        self.cifar10 = cifar10
         self.train = train
-        self.mix = (opt.BC and train)
+        self.base = _load_cifar(self.cifar10, self.train)
+        self.mix = opt.BC and train
         if opt.dataset == 'cifar10':
             if opt.plus:
                 self.mean = np.array([4.60, 2.24, -6.84])
@@ -28,90 +52,69 @@ class ImageDataset(chainer.dataset.DatasetMixin):
                 self.mean = np.array([129.3, 124.1, 112.4])
                 self.std = np.array([68.2, 65.4, 70.4])
 
-        self.preprocess_funcs = self.preprocess_setup()
+        self.N = len(self.base)
+        if self.opt.plus:
+            self.normalize = zero_mean
+        else:
+            self.normalize = normalize
 
     def __len__(self):
-        return len(self.base)
-
-    def preprocess_setup(self):
-        if self.opt.plus:
-            normalize = U.zero_mean
-        else:
-            normalize = U.normalize
-        if self.train:
-            funcs = [normalize(self.mean, self.std),
-                     U.horizontal_flip(),
-                     U.padding(4),
-                     U.random_crop(32),
-                     ]
-        else:
-            funcs = [normalize(self.mean, self.std)]
-
-        return funcs
+        return self.N
 
     def preprocess(self, image):
-        for f in self.preprocess_funcs:
-            image = f(image)
-
-        return image
+        image = self.normalize(image, self.mean, self.std)
+        if not self.train:
+            return image
+        else:
+            image = T.random_flip(image, x_random=True)
+            image = padding(image, 4)
+            image = T.random_crop(image, (32, 32))
+            return image
 
     def get_example(self, i):
-        if self.mix:  # Training phase of BC learning
-            while True:  # Select two training examples
-                image1, label1 = self.base[random.randint(0, len(self.base) - 1)]
-                image2, label2 = self.base[random.randint(0, len(self.base) - 1)]
+        if self.mix:
+            while True:
+                i1, i2 = np.random.randint(0, self.N, 2)
+                image1, label1 = self.base[i1]
+                image2, label2 = self.base[i2]
                 if label1 != label2:
                     break
             image1 = self.preprocess(image1)
             image2 = self.preprocess(image2)
-
-            # Mix two images
-            r = np.array(random.random())
+            r = np.random.rand(1)
             if self.opt.plus:
                 g1 = np.std(image1)
                 g2 = np.std(image2)
-                p = 1.0 / (1 + g1 / g2 * (1 - r) / r)
-                image = ((image1 * p + image2 * (1 - p)) / np.sqrt(p ** 2 + (1 - p) ** 2)).astype(np.float32)
+                p = 1. / (1 + g1 / g2 * (1 - r) / r)
+                image = ((image1 * p + image2 * (1 - p)) /
+                         np.sqrt(p ** 2 + (1 - p) ** 2)).astype(np.float32)
             else:
                 image = (image1 * r + image2 * (1 - r)).astype(np.float32)
 
-            # Mix two labels
-            eye = np.eye(self.opt.nClasses)
-            label = (eye[label1] * r + eye[label2] * (1 - r)).astype(np.float32)
+            eye = np.eye(self.opt.n_classes)
+            label = (eye[label1] * r + eye[label2]
+                     * (1 - r)).astype(np.float32)
 
-        else:  # Training phase of standard learning or testing phase
+        else:
             image, label = self.base[i]
             image = self.preprocess(image).astype(np.float32)
-            label = np.array(label, dtype=np.int32)
+            label = np.asarray(label, dtype=np.int32)
 
         return image, label
 
 
 def setup(opt):
-    def unpickle(fn):
-        with open(fn, 'rb') as f:
-            data = cPickle.load(f)
-        return data
-
-    if opt.dataset == 'cifar10':
-        train = [unpickle(os.path.join(opt.data, 'data_batch_{}'.format(i))) for i in range(1, 6)]
-        train_images = np.concatenate([d['data'] for d in train]).reshape((-1, 3, 32, 32))
-        train_labels = np.concatenate([d['labels'] for d in train])
-        val = unpickle(os.path.join(opt.data, 'test_batch'))
-        val_images = val['data'].reshape((-1, 3, 32, 32))
-        val_labels = val['labels']
-    else:
-        train = unpickle(os.path.join(opt.data, 'train'))
-        train_images = train['data'].reshape(-1, 3, 32, 32)
-        train_labels = train['fine_labels']
-        val = unpickle(os.path.join(opt.data, 'test'))
-        val_images = val['data'].reshape((-1, 3, 32, 32))
-        val_labels = val['fine_labels']
-
     # Iterator setup
-    train_data = ImageDataset(train_images, train_labels, opt, train=True)
-    val_data = ImageDataset(val_images, val_labels, opt, train=False)
-    train_iter = chainer.iterators.MultiprocessIterator(train_data, opt.batchSize, repeat=False)
-    val_iter = chainer.iterators.SerialIterator(val_data, opt.batchSize, repeat=False, shuffle=False)
+    cifar10 = opt.dataset.lower() == 'cifar10'
+    train_data = ImageDataset(opt, cifar10, train=True)
+    val_data = ImageDataset(opt, cifar10, train=False)
+    if opt.debug:
+        train_data = chainer.datasets.split_dataset(
+            train_data, opt.batch_size)[0]
+        val_data = chainer.datasets.split_dataset(val_data, opt.batch_size)[0]
+    train_iter = iterators.MultiprocessIterator(
+        train_data, opt.batch_size)
+    val_iter = iterators.SerialIterator(
+        val_data, opt.batch_size, repeat=False, shuffle=False)
 
     return train_iter, val_iter
