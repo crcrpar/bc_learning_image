@@ -113,7 +113,7 @@ def setup(opt):
             train_data, opt.batch_size)[0]
         val_data = chainer.datasets.split_dataset(val_data, opt.batch_size)[0]
     train_iter = iterators.MultiprocessIterator(
-        train_data, opt.batch_size, repeat=False)
+        train_data, opt.batch_size)
     val_iter = iterators.SerialIterator(
         val_data, opt.batch_size, repeat=False, shuffle=False)
 

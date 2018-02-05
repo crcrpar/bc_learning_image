@@ -11,7 +11,7 @@ import chainer
 from chainer import optimizers
 from chainer import training
 from chainer.training import extensions
-from chainer.training import triggers
+from chainer.training.triggers import MaxValueTrigger, ManualScheduleTrigger, MinValueTrigger
 
 import dataset
 import net
@@ -32,18 +32,18 @@ def main():
     # Trainer
     trainer = training.Trainer(updater, (opt.n_epochs, 'epoch'), opt.save)
     trainer.extend(extensions.ExponentialShift('lr', 0.1, opt.LR),
-                   trigger=triggers.ManualScheduleTrigger(opt.schedule, 'epoch'))
+                   trigger=ManualScheduleTrigger(opt.schedule, 'epoch'))
     trainer.extend(extensions.Evaluator(val_iter, model,
                                         device=opt.gpu), trigger=(1, 'epoch'))
     trainer.extend(extensions.dump_graph('main/loss'))
-    trainer.extend(extensions.snapshot(filename='min_loss'), trigger=triggers.MinValueTrigger(
+    trainer.extend(extensions.snapshot(filename='min_loss'), trigger=MinValueTrigger(
         key='validation/main/loss', trigger=(5, 'epoch')))
-    trainer.extend(extensions.snapshot(filename='max_accuracy'), trigger=triggers.MaxValueTrigger(
+    trainer.extend(extensions.snapshot(filename='max_accuracy'), trigger=MaxValueTrigger(
         key='validation/main/accuracy', trigger=(5, 'epoch')))
     trainer.extend(extensions.snapshot_object(model, 'min_loss_model'),
-                   trigger=triggers.MinValueTrigger(key='validation/main/loss', trigger=(5, 'epoch')))
+                   trigger=MinValueTrigger(key='validation/main/loss', trigger=(5, 'epoch')))
     trainer.extend(extensions.snapshot_object(model, 'max_accuracy_model'),
-                   trigger=triggers.MaxValueTrigger(key='validation/main/accuracy', trigger=(5, 'epoch')))
+                   trigger=MaxValueTrigger(key='validation/main/accuracy', trigger=(5, 'epoch')))
     trainer.extend(extensions.observe_lr())
     trainer.extend(extensions.LogReport())
     if extensions.PlotReport.available():
@@ -59,7 +59,14 @@ def main():
     if opt.resume and os.path.exists(opt.resume):
         chainer.serializers.load_npz(opt.resume, trainer)
     # Run the training
+    try:
         trainer.run()
+    except Exception as e:
+        import shutil
+        import traceback
+        print('\nerror message')
+        print(traceback.format_exc())
+        shutil.rmtree(opt.save)
 
 
 if __name__ == '__main__':

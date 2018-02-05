@@ -27,6 +27,7 @@ class ConvNet(chainer.Chain):
             self.loss = kl_divergence
         else:
             self.loss = F.softmax_cross_entropy
+
         # architecture
         kwargs = {'ksize': 3, 'stride': 1, 'pad': 1, 'nobias': nobias}
         with self.init_scope():
@@ -46,13 +47,12 @@ class ConvNet(chainer.Chain):
 
     def __call__(self, x, t):
         y_hat = self.forward(x)
-        loss = self.loss(y_hat, t)
-        if chainer.config.train:
-            loss = self.loss(y_hat, t)
-        else:
+        if not chainer.config.train:
             loss = F.softmax_cross_entropy(y_hat, t)
-        if self.bc_learning:
-            t = F.argmax(t, axis=1)
+        else:
+            loss = self.loss(y_hat, t)
+            if self.bc_learning:
+                t = F.argmax(t, axis=1)
         acc = F.accuracy(y_hat, t)
         chainer.report({'loss': loss, 'accuracy': acc}, self)
         return loss

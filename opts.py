@@ -63,13 +63,12 @@ def parse():
 
     timestamp = datetime.datetime.now().strftime('%y%m%d_%H%M')
     debug_flag = '_debug' if opt.debug else ''
-    opt.save = os.path.join(opt.save, timestamp + debug_flag)
+    learning = display_info(opt)
+    opt.save = os.path.join(opt.save, timestamp + debug_flag + '_' + learning)
     if not os.path.isdir(opt.save):
         os.makedirs(opt.save)
         with open(os.path.join(opt.save, 'opts.json'), 'w') as f:
             json.dump(opt.__dict__, f, indent=4)
-
-    display_info(opt)
 
     return opt
 
@@ -85,3 +84,4 @@ def display_info(opt):
     opt.learning = learning
 
     print(json.dumps(opt.__dict__, indent=4))
+    return learning
