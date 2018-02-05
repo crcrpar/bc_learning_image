@@ -5,12 +5,18 @@ from chainer import iterators
 import chainercv.transforms as T
 
 
-def _load_cifar(cifar10, train):
+def _load_cifar(cifar10, _train):
+    """Load dataset
+
+    Args:
+        cifar10 (bool): if False, load cifar100
+        train (bool): if False, return test
+    """
     if cifar10:
         train, test = chainer.datasets.get_cifar10(scale=255.)
     else:
         train, test = chainer.datasets.get_cifar100(scale=255.)
-    if train:
+    if _train:
         return train
     else:
         return test
@@ -30,12 +36,21 @@ def padding(image, pad):
 
 
 class ImageDataset(chainer.dataset.DatasetMixin):
+    """BC image dataset.
 
-    def __init__(self, opt, cifar10=True, train=True):
+    Args:
+        opt (object): defined in opts.py
+        cifar10 (bool): if True, CIFAR10, else CIFAR100
+        train (bool): if True, train dataset, else test dataset
+    """
+
+    def __init__(self, opt, cifar10, train):
         self.opt = opt
         self.cifar10 = cifar10
         self.train = train
         self.base = _load_cifar(self.cifar10, self.train)
+        self.N = len(self.base)
+        print("# of samples: {}".format(len(self)))
         self.mix = opt.BC and train
         if opt.dataset == 'cifar10':
             if opt.plus:
@@ -52,14 +67,13 @@ class ImageDataset(chainer.dataset.DatasetMixin):
                 self.mean = np.array([129.3, 124.1, 112.4])
                 self.std = np.array([68.2, 65.4, 70.4])
 
-        self.N = len(self.base)
         if self.opt.plus:
             self.normalize = zero_mean
         else:
             self.normalize = normalize
 
     def __len__(self):
-        return self.N
+        return len(self.base)
 
     def preprocess(self, image):
         image = self.normalize(image, self.mean, self.std)
@@ -118,3 +132,10 @@ def setup(opt):
         val_data, opt.batch_size, repeat=False, shuffle=False)
 
     return train_iter, val_iter
+
+
+if __name__ == '__main__':
+    train = _load_cifar(True, True)
+    test = _load_cifar(True, False)
+    print("# of training samples: {}\n# of test samples: {}".format(
+        len(train), len(test)))
