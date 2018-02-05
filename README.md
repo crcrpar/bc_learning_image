@@ -10,6 +10,12 @@ Here are some differences
     - `--dataset` argument is set to `cifar10`
     - results (learning curves, snapshots, models, options json file) will be saved under `$(pwd)/results/{yy/mm/dd_/HH/MM}_{learning}`. `learning` is `BC`, `BC+`, or `standard`.
 
+| Learning | CIFAR-10 | CIFAR-100 |
+|:--|:-:|:-:|
+| BC | ![bc_10](https://github.com/crcrpar/bc_learning_image/blob/master/images/learning_curves/cifar10_bc_accuracy.png?raw=true) | ![bc_100](https://github.com/crcrpar/bc_learning_image/blob/master/images/learning_curves/cifar100_bc_accuracy.png?raw=true) |
+| BC+ | ![bcp_10](https://github.com/crcrpar/bc_learning_image/blob/master/images/learning_curves/cifar10_bcplus_accuracy.png?raw=true) | ![bcp_100](https://github.com/crcrpar/bc_learning_image/blob/master/images/learning_curves/cifar100_bcplus_accuracy.png?raw=true) |
+
+
 BC learning for images
 =========================
 
